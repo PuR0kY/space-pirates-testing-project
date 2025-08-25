@@ -1,0 +1,13 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://4cyrm1yjvq0g"
+valid=false
+
+[deps]
+
+source_file="res://Marching Cubes/density_compute.glsl"
+
+[params]
+

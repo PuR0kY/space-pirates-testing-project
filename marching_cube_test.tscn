@@ -1,0 +1,41 @@
+[gd_scene load_steps=7 format=3 uid="uid://djjghy7lc022l"]
+
+[ext_resource type="FastNoiseLite" uid="uid://dp7ogxg75vonh" path="res://Marching Cubes/test_planet_1.tres" id="2_kiakm"]
+[ext_resource type="PackedScene" uid="uid://2oxdgu03lnbk" path="res://addons/character-controller/example/main/player.tscn" id="4_epmh5"]
+[ext_resource type="Script" uid="uid://dlx4gqu7rberw" path="res://Marching Cubes/ChunkLoader.cs" id="4_fgr72"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_2n6nf"]
+sky_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
+ground_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
+
+[sub_resource type="Sky" id="Sky_g5vc0"]
+sky_material = SubResource("ProceduralSkyMaterial_2n6nf")
+
+[sub_resource type="Environment" id="Environment_kiakm"]
+background_mode = 2
+sky = SubResource("Sky_g5vc0")
+tonemap_mode = 2
+
+[node name="Node3D" type="Node3D"]
+
+[node name="Player" parent="." instance=ExtResource("4_epmh5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 150, 0)
+FlyModeSpeedModifier = 5
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.866025, -0.433013, 0.25, 0, 0.5, 0.866025, -0.5, 0.75, -0.433013, 0, 13.2581, -4.45425)
+light_color = Color(1, 0.152941, 1, 1)
+light_energy = 4.394
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_kiakm")
+
+[node name="ChunkLoader" type="Node3D" parent="." node_paths=PackedStringArray("Player")]
+transform = Transform3D(8, 0, 0, 0, 8, 0, 0, 0, 8, 0, 0, 0)
+script = ExtResource("4_fgr72")
+RenderDistance = 10
+ChunkSize = 24
+ChunkHeight = 64
+Noise = ExtResource("2_kiakm")
+Player = NodePath("../Player")
