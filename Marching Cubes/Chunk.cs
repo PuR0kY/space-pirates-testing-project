@@ -105,13 +105,14 @@ public class Chunk
         MeshInstance.Mesh = arrayMesh;
 
         // materiál
-        var mat = new StandardMaterial3D();
-        mat.AlbedoColor = new Color(0.8f, 0.3f, 0.1f);
-        mat.Metallic = 0.6f;
-        mat.Roughness = 0.0f;
-        MeshInstance.MaterialOverride = mat;
+        //var mat = new StandardMaterial3D();
+        //mat.AlbedoColor = new Color(0.8f, 0.3f, 0.1f);
+        //mat.Metallic = 0.6f;
+        //mat.Roughness = 0.0f;
+        //MeshInstance.MaterialOverride = mat;
     }
 
+    /** TODO: Přesun do Vertex nebo Compute shaderu a počítat na gpu? */
     private Vector3[] CalculateNormals(List<Vector3> verts, List<int> tris)
     {
         Vector3[] normals = new Vector3[verts.Count];
@@ -132,9 +133,6 @@ public class Chunk
             normals[i1] += normal;
             normals[i2] += normal;
         }
-
-        for (int i = 0; i < normals.Length; i++)
-            normals[i] = normals[i].Normalized();
 
         return normals;
     }
