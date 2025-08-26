@@ -1,6 +1,8 @@
 using Godot;
 using SpacePiratesTestingProject.Marching_Cubes;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SpacePiratesTestingProject.Marching_Cubes;
 
@@ -105,36 +107,143 @@ public class Chunk
         MeshInstance.Mesh = arrayMesh;
 
         // materiál
-        //var mat = new StandardMaterial3D();
-        //mat.AlbedoColor = new Color(0.8f, 0.3f, 0.1f);
-        //mat.Metallic = 0.6f;
-        //mat.Roughness = 0.0f;
-        //MeshInstance.MaterialOverride = mat;
+        var mat = new StandardMaterial3D();
+        mat.AlbedoColor = new Color(0.8f, 0.3f, 0.1f);
+        mat.Metallic = 0.6f;
+        mat.Roughness = 0.0f;
+        MeshInstance.MaterialOverride = mat;
     }
 
     /** TODO: Přesun do Vertex nebo Compute shaderu a počítat na gpu? */
+    //for (int i = 0; i < tris.Count; i += 3)
+    //{
+    //    int i0 = tris[i];
+    //    int i1 = tris[i + 1];
+    //    int i2 = tris[i + 2];
+
+    //    Vector3 v0 = verts[i0];
+    //    Vector3 v1 = verts[i1];
+    //    Vector3 v2 = verts[i2];
+
+    //    Vector3 normal = (v1 - v0).Cross(v2 - v0).Normalized();
+
+    //    normals[i0] += normal;
+    //    normals[i1] += normal;
+    //    normals[i2] += normal;
+    //}
+
+    //return normals;
     private Vector3[] CalculateNormals(List<Vector3> verts, List<int> tris)
     {
         Vector3[] normals = new Vector3[verts.Count];
 
-        for (int i = 0; i < tris.Count; i += 3)
+        var rd = RenderingServer.GetRenderingDevice();
+
+        // --- Buffery ---
+        int vertsSize = verts.Count * sizeof(float) * 4; // vec4 stride
+        int trisSize = tris.Count * sizeof(int);
+        int normalsAccumSize = normals.Length * sizeof(int) * 4; // ivec4 stride
+        int normalsSize = normals.Length * sizeof(float) * 4; // vec4
+
+        var vertsBuffer = rd.StorageBufferCreate((uint)vertsSize, ToBytesVec4(verts));
+        var trisBuffer = rd.StorageBufferCreate((uint)trisSize, ToBytes(tris.ToArray()));
+        var normalsAccumBuffer = rd.StorageBufferCreate((uint)normalsAccumSize, new byte[normalsAccumSize]);
+        var normalsBuffer = rd.StorageBufferCreate((uint)normalsSize, new byte[normalsSize]);
+
+        // --- Shadery ---
+        var accumulateShaderFile = GD.Load<RDShaderFile>("res://Marching_Cubes/compute_normals.glsl");
+        var normalizeShaderFile = GD.Load<RDShaderFile>("res://Marching_Cubes/normalize_normals.glsl");
+
+        Rid accumulateShaderRID = rd.ShaderCreateFromSpirV(accumulateShaderFile.GetSpirV());
+        Rid normalizeShaderRID = rd.ShaderCreateFromSpirV(normalizeShaderFile.GetSpirV());
+
+        Rid accumulatePipeline = rd.ComputePipelineCreate(accumulateShaderRID);
+        Rid normalizePipeline = rd.ComputePipelineCreate(normalizeShaderRID);
+
+        // --- UniformSet (accumulate) ---
+        var uVerts = new RDUniform { UniformType = RenderingDevice.UniformType.StorageBuffer, Binding = 0 };
+        uVerts.AddId(vertsBuffer);
+
+        var uTris = new RDUniform { UniformType = RenderingDevice.UniformType.StorageBuffer, Binding = 1 };
+        uTris.AddId(trisBuffer);
+
+        var uNormalsAccum = new RDUniform { UniformType = RenderingDevice.UniformType.StorageBuffer, Binding = 2 };
+        uNormalsAccum.AddId(normalsAccumBuffer);
+
+        var uniformsAccumulate = new Godot.Collections.Array<RDUniform> { uVerts, uTris, uNormalsAccum };
+        Rid uniformSetAccumulate = rd.UniformSetCreate(uniformsAccumulate, accumulateShaderRID, 0);
+
+        // --- Dispatch accumulate ---
+        long list = rd.ComputeListBegin();
+        rd.ComputeListBindComputePipeline(list, accumulatePipeline);
+        rd.ComputeListBindUniformSet(list, uniformSetAccumulate, 0);
+
+
+        uint localSize = 64;
+        uint totalTriangles = (uint)(tris.Count / 3);
+        uint groups = (uint)Math.Ceiling(totalTriangles / (float)localSize);
+
+        rd.ComputeListDispatch(list, groups, 1, 1);
+        rd.ComputeListEnd();
+        rd.Submit();
+        rd.Sync();
+
+        // --- UniformSet (normalize) ---
+        var uNormalsAccum2 = new RDUniform { UniformType = RenderingDevice.UniformType.StorageBuffer, Binding = 2 };
+        uNormalsAccum2.AddId(normalsAccumBuffer);
+
+        var uNormalsOut = new RDUniform { UniformType = RenderingDevice.UniformType.StorageBuffer, Binding = 3 };
+        uNormalsOut.AddId(normalsBuffer);
+
+        var uniformsNormalize = new Godot.Collections.Array<RDUniform> { uNormalsAccum2, uNormalsOut };
+        Rid uniformSetNormalize = rd.UniformSetCreate(uniformsNormalize, normalizeShaderRID, 0);
+
+        // --- Dispatch normalize ---
+        list = rd.ComputeListBegin();
+        rd.ComputeListBindComputePipeline(list, normalizePipeline);
+        rd.ComputeListBindUniformSet(list, uniformSetNormalize, 0);
+
+        uint totalVerts = (uint)verts.Count;
+        uint groupsNormalize = (uint)Math.Ceiling(totalVerts / (float)localSize);
+
+        rd.ComputeListDispatch(list, groupsNormalize, 1, 1);
+        rd.ComputeListEnd();
+        rd.Submit();
+        rd.Sync();
+
+        // --- Načtení výsledků ---
+        var bytes = rd.BufferGetData(normalsBuffer);
+        return FromBytesToVector3Vec4(bytes);
+    }
+
+    private static byte[] ToBytesVec4(List<Vector3> verts)
+    {
+        byte[] bytes = new byte[verts.Count * 16]; // vec4 stride
+        int offset = 0;
+        foreach (var v in verts)
         {
-            int i0 = tris[i];
-            int i1 = tris[i + 1];
-            int i2 = tris[i + 2];
-
-            Vector3 v0 = verts[i0];
-            Vector3 v1 = verts[i1];
-            Vector3 v2 = verts[i2];
-
-            Vector3 normal = (v1 - v0).Cross(v2 - v0).Normalized();
-
-            normals[i0] += normal;
-            normals[i1] += normal;
-            normals[i2] += normal;
+            Buffer.BlockCopy(new float[] { v.X, v.Y, v.Z, 0f }, 0, bytes, offset, 16);
+            offset += 16;
         }
+        return bytes;
+    }
 
-        return normals;
+    private static byte[] ToBytes(int[] array)
+    {
+        byte[] bytes = new byte[array.Length * 4];
+        Buffer.BlockCopy(array, 0, bytes, 0, bytes.Length);
+        return bytes;
+    }
+
+    private static Vector3[] FromBytesToVector3Vec4(byte[] bytes)
+    {
+        int count = bytes.Length / 16;
+        Vector3[] result = new Vector3[count];
+        float[] floats = new float[count * 4];
+        Buffer.BlockCopy(bytes, 0, floats, 0, bytes.Length);
+        for (int i = 0; i < count; i++)
+            result[i] = new Vector3(floats[i * 4], floats[i * 4 + 1], floats[i * 4 + 2]);
+        return result;
     }
 
     private float ComputeHeight(Vector3 pos)
