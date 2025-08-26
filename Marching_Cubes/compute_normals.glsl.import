@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://bwfpmnvd4fdbc"
+path="res://.godot/imported/compute_normals.glsl-02d6dd87f1885927f28adb1f5ca375f0.res"
+
+[deps]
+
+source_file="res://Marching_Cubes/compute_normals.glsl"
+dest_files=["res://.godot/imported/compute_normals.glsl-02d6dd87f1885927f28adb1f5ca375f0.res"]
+
+[params]
+

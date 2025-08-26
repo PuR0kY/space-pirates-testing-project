@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://d8mk0sscprq3"
+path="res://.godot/imported/normalize_normals.glsl-acdbc0ae78226ce713d977c2c37596b7.res"
+
+[deps]
+
+source_file="res://Marching_Cubes/normalize_normals.glsl"
+dest_files=["res://.godot/imported/normalize_normals.glsl-acdbc0ae78226ce713d977c2c37596b7.res"]
+
+[params]
+

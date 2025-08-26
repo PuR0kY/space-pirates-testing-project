@@ -135,49 +135,40 @@ public class Chunk
     //return normals;
     private Vector3[] CalculateNormals(List<Vector3> verts, List<int> tris)
     {
+        var rd = RenderingServer.GetRenderingDevice();
         Vector3[] normals = new Vector3[verts.Count];
 
-        var rd = RenderingServer.GetRenderingDevice();
-
-        // --- Buffery ---
-        int vertsSize = verts.Count * sizeof(float) * 4; // vec4 stride
+        int vertsSize = verts.Count * sizeof(float) * 4; // vec4
         int trisSize = tris.Count * sizeof(int);
-        int normalsAccumSize = normals.Length * sizeof(int) * 4; // ivec4 stride
-        int normalsSize = normals.Length * sizeof(float) * 4; // vec4
+        int triNormalsSize = (tris.Count / 3) * sizeof(float) * 4; // jedna normála na trojúhelník
 
+        // Buffery
         var vertsBuffer = rd.StorageBufferCreate((uint)vertsSize, ToBytesVec4(verts));
         var trisBuffer = rd.StorageBufferCreate((uint)trisSize, ToBytes(tris.ToArray()));
-        var normalsAccumBuffer = rd.StorageBufferCreate((uint)normalsAccumSize, new byte[normalsAccumSize]);
-        var normalsBuffer = rd.StorageBufferCreate((uint)normalsSize, new byte[normalsSize]);
+        var triNormalsBuffer = rd.StorageBufferCreate((uint)triNormalsSize, new byte[triNormalsSize]);
 
-        // --- Shadery ---
-        var accumulateShaderFile = GD.Load<RDShaderFile>("res://Marching_Cubes/compute_normals.glsl");
-        var normalizeShaderFile = GD.Load<RDShaderFile>("res://Marching_Cubes/normalize_normals.glsl");
+        // Shader
+        var shaderFile = GD.Load<RDShaderFile>("res://Marching_Cubes/compute_normals.glsl");
+        Rid shaderRID = rd.ShaderCreateFromSpirV(shaderFile.GetSpirV());
+        Rid pipeline = rd.ComputePipelineCreate(shaderRID);
 
-        Rid accumulateShaderRID = rd.ShaderCreateFromSpirV(accumulateShaderFile.GetSpirV());
-        Rid normalizeShaderRID = rd.ShaderCreateFromSpirV(normalizeShaderFile.GetSpirV());
-
-        Rid accumulatePipeline = rd.ComputePipelineCreate(accumulateShaderRID);
-        Rid normalizePipeline = rd.ComputePipelineCreate(normalizeShaderRID);
-
-        // --- UniformSet (accumulate) ---
+        // Uniform set
         var uVerts = new RDUniform { UniformType = RenderingDevice.UniformType.StorageBuffer, Binding = 0 };
         uVerts.AddId(vertsBuffer);
 
         var uTris = new RDUniform { UniformType = RenderingDevice.UniformType.StorageBuffer, Binding = 1 };
         uTris.AddId(trisBuffer);
 
-        var uNormalsAccum = new RDUniform { UniformType = RenderingDevice.UniformType.StorageBuffer, Binding = 2 };
-        uNormalsAccum.AddId(normalsAccumBuffer);
+        var uTriNormals = new RDUniform { UniformType = RenderingDevice.UniformType.StorageBuffer, Binding = 2 };
+        uTriNormals.AddId(triNormalsBuffer);
 
-        var uniformsAccumulate = new Godot.Collections.Array<RDUniform> { uVerts, uTris, uNormalsAccum };
-        Rid uniformSetAccumulate = rd.UniformSetCreate(uniformsAccumulate, accumulateShaderRID, 0);
+        var uniforms = new Godot.Collections.Array<RDUniform> { uVerts, uTris, uTriNormals };
+        Rid uniformSet = rd.UniformSetCreate(uniforms, shaderRID, 0);
 
-        // --- Dispatch accumulate ---
+        // Dispatch
         long list = rd.ComputeListBegin();
-        rd.ComputeListBindComputePipeline(list, accumulatePipeline);
-        rd.ComputeListBindUniformSet(list, uniformSetAccumulate, 0);
-
+        rd.ComputeListBindComputePipeline(list, pipeline);
+        rd.ComputeListBindUniformSet(list, uniformSet, 0);
 
         uint localSize = 64;
         uint totalTriangles = (uint)(tris.Count / 3);
@@ -188,33 +179,37 @@ public class Chunk
         rd.Submit();
         rd.Sync();
 
-        // --- UniformSet (normalize) ---
-        var uNormalsAccum2 = new RDUniform { UniformType = RenderingDevice.UniformType.StorageBuffer, Binding = 2 };
-        uNormalsAccum2.AddId(normalsAccumBuffer);
+        // Načtení výsledků z GPU
+        var triNormalsBytes = rd.BufferGetData(triNormalsBuffer);
 
-        var uNormalsOut = new RDUniform { UniformType = RenderingDevice.UniformType.StorageBuffer, Binding = 3 };
-        uNormalsOut.AddId(normalsBuffer);
+        // Převod na Vector3
+        Vector3[] triNormals = FromBytesToVector3Vec4(triNormalsBytes);
 
-        var uniformsNormalize = new Godot.Collections.Array<RDUniform> { uNormalsAccum2, uNormalsOut };
-        Rid uniformSetNormalize = rd.UniformSetCreate(uniformsNormalize, normalizeShaderRID, 0);
+        // --- CPU akumulace vertex normál ---
+        for (int i = 0; i < verts.Count; i++)
+            normals[i] = Vector3.Zero;
 
-        // --- Dispatch normalize ---
-        list = rd.ComputeListBegin();
-        rd.ComputeListBindComputePipeline(list, normalizePipeline);
-        rd.ComputeListBindUniformSet(list, uniformSetNormalize, 0);
+        for (int t = 0; t < tris.Count; t += 3)
+        {
+            int i0 = tris[t];
+            int i1 = tris[t + 1];
+            int i2 = tris[t + 2];
 
-        uint totalVerts = (uint)verts.Count;
-        uint groupsNormalize = (uint)Math.Ceiling(totalVerts / (float)localSize);
+            Vector3 n = triNormals[t / 3];
 
-        rd.ComputeListDispatch(list, groupsNormalize, 1, 1);
-        rd.ComputeListEnd();
-        rd.Submit();
-        rd.Sync();
+            normals[i0] += n;
+            normals[i1] += n;
+            normals[i2] += n;
+        }
 
-        // --- Načtení výsledků ---
-        var bytes = rd.BufferGetData(normalsBuffer);
-        return FromBytesToVector3Vec4(bytes);
+        for (int i = 0; i < normals.Length; i++)
+            normals[i] = normals[i].Length() > 0 ? normals[i].Normalized() : Vector3.Up;
+
+        return normals;
     }
+
+
+
 
     private static byte[] ToBytesVec4(List<Vector3> verts)
     {
