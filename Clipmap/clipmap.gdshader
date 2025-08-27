@@ -7,7 +7,7 @@ varying vec2 texture_position;
 
 void vertex() {
 	vec3 world_vertex = VERTEX + MODEL_MATRIX[3].xyz;
-	texture_position = (world_vertex.xz * 0.5)/float(textureSize(noise, 0).x);
+	texture_position = (world_vertex.xz + 0.5)/float(textureSize(noise, 0).x);
 	VERTEX.y = texture(noise, texture_position).r * 18.0; // Can be as global too!
 }
 

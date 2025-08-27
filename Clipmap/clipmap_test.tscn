@@ -31,8 +31,8 @@ environment = SubResource("Environment_733ev")
 
 [node name="Terrain" type="StaticBody3D" parent="."]
 
-[node name="Collisionmap" parent="Terrain" node_paths=PackedStringArray("player_character") instance=ExtResource("2_tek5n")]
+[node name="Clipmap" parent="Terrain" node_paths=PackedStringArray("player_character") instance=ExtResource("2_ogvpo")]
 player_character = NodePath("../../Player")
 
-[node name="Clipmap" parent="Terrain" node_paths=PackedStringArray("player_character") instance=ExtResource("2_ogvpo")]
+[node name="Collisionmap" parent="Terrain" node_paths=PackedStringArray("player_character") instance=ExtResource("2_tek5n")]
 player_character = NodePath("../../Player")

@@ -70,9 +70,9 @@ move_sprint={
 
 noise={
 "type": "sampler2D",
-"value": "res://Clipmap/noiseTexture.png"
+"value": "res://Clipmap/new_noise_texture_2d_normal.tres"
 }
 normalmap={
 "type": "sampler2D",
-"value": "res://Clipmap/normalMap.png"
+"value": "res://Clipmap/new_noise_texture_2d.tres"
 }
