@@ -1,0 +1,21 @@
+[gd_scene load_steps=5 format=3 uid="uid://dv3f41b4g5hnv"]
+
+[ext_resource type="Shader" uid="uid://c4n1foblk2e6y" path="res://Clipmap/clipmap.gdshader" id="1_hlrbi"]
+[ext_resource type="Script" uid="uid://brut4trk8a65l" path="res://Clipmap/clipmap.gd" id="1_mps63"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_733ev"]
+render_priority = 0
+shader = ExtResource("1_hlrbi")
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_085wc"]
+size = Vector2(512, 512)
+subdivide_width = 511
+subdivide_depth = 511
+
+[node name="Clipmap" type="Node3D"]
+script = ExtResource("1_mps63")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+material_override = SubResource("ShaderMaterial_733ev")
+mesh = SubResource("PlaneMesh_085wc")
+skeleton = NodePath("../..")

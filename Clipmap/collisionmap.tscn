@@ -1,0 +1,15 @@
+[gd_scene load_steps=4 format=3 uid="uid://cswka88e3kqb7"]
+
+[ext_resource type="Script" uid="uid://bg73nmi4n2w87" path="res://Clipmap/collisionmap.gd" id="1_nkp3r"]
+
+[sub_resource type="ConcavePolygonShape3D" id="ConcavePolygonShape3D_w7c0w"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_nkp3r"]
+size = Vector2(8, 8)
+subdivide_width = 7
+subdivide_depth = 7
+
+[node name="Collisionmap" type="CollisionShape3D"]
+shape = SubResource("ConcavePolygonShape3D_w7c0w")
+script = ExtResource("1_nkp3r")
+template_mesh = SubResource("PlaneMesh_nkp3r")
