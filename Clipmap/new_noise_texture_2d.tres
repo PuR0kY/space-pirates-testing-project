@@ -4,5 +4,10 @@
 
 [resource]
 resource_local_to_scene = true
+width = 1024
+height = 1024
+seamless_blend_skirt = 0.885
 as_normal_map = true
+bump_strength = 32.0
+normalize = false
 noise = ExtResource("1_14hjb")

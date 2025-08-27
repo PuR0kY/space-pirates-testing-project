@@ -76,3 +76,7 @@ normalmap={
 "type": "sampler2D",
 "value": "res://Clipmap/new_noise_texture_2d.tres"
 }
+amplitude={
+"type": "float",
+"value": 64.0
+}

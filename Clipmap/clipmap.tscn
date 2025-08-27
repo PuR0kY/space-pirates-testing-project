@@ -8,9 +8,9 @@ render_priority = 0
 shader = ExtResource("1_hlrbi")
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_085wc"]
-size = Vector2(512, 512)
-subdivide_width = 511
-subdivide_depth = 511
+size = Vector2(1024, 1024)
+subdivide_width = 1023
+subdivide_depth = 1023
 
 [node name="Clipmap" type="Node3D"]
 script = ExtResource("1_mps63")
@@ -18,4 +18,3 @@ script = ExtResource("1_mps63")
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 material_override = SubResource("ShaderMaterial_733ev")
 mesh = SubResource("PlaneMesh_085wc")
-skeleton = NodePath("../..")
