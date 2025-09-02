@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://bxg2yryiyrqsu"]
+
+[ext_resource type="Script" path="res://Player.gd" id="1"]
+
+[node name="Player" type="CharacterBody3D"]
+script = ExtResource("1")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SphereShape3D {
+    radius = 0.5
+}
+
+[node name="Head" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+
+[node name="Camera3D" type="Camera3D" parent="Head"]
+current = true

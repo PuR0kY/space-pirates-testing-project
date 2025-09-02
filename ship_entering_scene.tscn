@@ -1,0 +1,49 @@
+[gd_scene load_steps=10 format=3 uid="uid://3e4mr6qhycua"]
+
+[ext_resource type="Texture2D" uid="uid://cl4kewig3pk7s" path="res://textures/purple.png" id="1_fg5do"]
+[ext_resource type="PackedScene" uid="uid://cvaxk110lefq6" path="res://Player.tscn" id="1_rfduy"]
+[ext_resource type="PackedScene" uid="uid://c0c4ahqi8tuvq" path="res://Ship.tscn" id="2_fg5do"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_rfduy"]
+sky_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
+ground_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
+
+[sub_resource type="Sky" id="Sky_fg5do"]
+sky_material = SubResource("ProceduralSkyMaterial_rfduy")
+
+[sub_resource type="Environment" id="Environment_xv3nk"]
+background_mode = 2
+sky = SubResource("Sky_fg5do")
+tonemap_mode = 2
+
+[sub_resource type="ConcavePolygonShape3D" id="ConcavePolygonShape3D_4qwsu"]
+data = PackedVector3Array(50, 0, 50, -50, 0, 50, 50, 0, -50, -50, 0, 50, -50, 0, -50, 50, 0, -50)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_xv3nk"]
+albedo_texture = ExtResource("1_fg5do")
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_4qwsu"]
+material = SubResource("StandardMaterial3D_xv3nk")
+size = Vector2(1000, 1000)
+
+[node name="Node3D" type="StaticBody3D"]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.866023, -0.433016, 0.250001, 0, 0.499998, 0.866027, -0.500003, 0.749999, -0.43301, 0, 0, 0)
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_xv3nk")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("ConcavePolygonShape3D_4qwsu")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="CollisionShape3D"]
+mesh = SubResource("PlaneMesh_4qwsu")
+skeleton = NodePath("../..")
+
+[node name="Player" parent="." instance=ExtResource("1_rfduy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.71931, -9.66332)
+
+[node name="Ship" parent="." instance=ExtResource("2_fg5do")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.673607, 0)

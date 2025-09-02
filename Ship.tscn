@@ -1,0 +1,45 @@
+[gd_scene load_steps=7 format=3 uid="uid://c0c4ahqi8tuvq"]
+
+[ext_resource type="Script" uid="uid://bwqyeljtctvft" path="res://Ship.gd" id="1"]
+[ext_resource type="Texture2D" uid="uid://pe7a4weirj2g" path="res://textures/dark.png" id="2_h40nn"]
+
+[sub_resource type="BoxShape3D" id="1"]
+size = Vector3(3, 0.4, 6)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_oam5h"]
+albedo_texture = ExtResource("2_h40nn")
+
+[sub_resource type="BoxMesh" id="2"]
+size = Vector3(3, 0.4, 6)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_xljvd"]
+size = Vector3(4, 4, 7)
+
+[node name="Ship" type="CharacterBody3D"]
+script = ExtResource("1")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.407493, 0)
+shape = SubResource("1")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.415851, 0)
+material_override = SubResource("StandardMaterial3D_oam5h")
+mesh = SubResource("2")
+
+[node name="InteriorRoot" type="Node3D" parent="."]
+
+[node name="PilotSeat" type="Marker3D" parent="InteriorRoot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="PilotCam" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -5)
+
+[node name="Hull" type="Area3D" parent="."]
+
+[node name="HullCollision" type="CollisionShape3D" parent="Hull"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.884693, 0)
+shape = SubResource("BoxShape3D_xljvd")
+
+[connection signal="body_entered" from="Hull" to="." method="_on_hull_body_entered"]
+[connection signal="body_exited" from="Hull" to="." method="_on_hull_body_exited"]
