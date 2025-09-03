@@ -1,19 +1,21 @@
 class_name Ship
-extends CharacterBody3D
+extends Node3D
 
-var pilot: Player = null
-var players_ship_proxies: Dictionary = {}
-var players_controlling_proxies: Dictionary = {}
+@export var thrust_force: float = 120.0
+@export var rotation_speed: float = 0.003
+@export var damping: float = 0.9
+
+var velocity: Vector3 = Vector3.ZERO
+var thrust: float = 0.0
+
+var pilot: Character = null
+var original_parent: Node = null
 
 @onready var pilot_cam: Camera3D = $PilotCam
-@onready var mesh_instance_3d: MeshInstance3D = $MeshInstance3D
 @onready var hull_collision: CollisionShape3D = $CollisionShape3D
-
-var thrust = 0.0
-const THRUST_FORCE := 120.0
-const ROT_SPEED := 0.8
-const DAMPING := 0.9
-@export var rotation_speed: float = 0.003
+@onready var interior_root: Node3D = $InteriorRoot
+@onready var pilot_seat: Node3D = $InteriorRoot/PilotSeat
+@onready var seat: MeshInstance3D = $InteriorRoot/PilotSeat/Seat
 
 # --- Input ---
 func _input(event):
@@ -21,95 +23,71 @@ func _input(event):
 		return
 	
 	if event is InputEventMouseMotion:
-		# pitch (nahoru/dolů) kolem LOKÁLNÍ osy X (nos lodi)
+		# pitch (nahoru/dolů) kolem lokální osy X
 		rotate_object_local(Vector3.RIGHT, -event.relative.y * rotation_speed)
-
-		# roll (naklánění vlevo/vpravo) kolem LOKÁLNÍ Z
+		# roll (naklánění vlevo/vpravo) kolem lokální Z
 		rotate_object_local(Vector3.FORWARD, -event.relative.x * rotation_speed)
 		
-	if Input.is_action_just_pressed("interact"):
-		if pilot != null:
-			_leave_pilot_seat()
+	if Input.is_action_just_pressed("ui_accept"):
+		_leave_pilot_seat()
 
 # --- Physics ---
 func _physics_process(delta: float) -> void:
 	# pohyb lodi podle pilota
 	if pilot != null:
 		thrust = Input.get_action_strength("thrust_up") - Input.get_action_strength("thrust_down")
+	else:
+		thrust = 0.0
+
 	var forward = -transform.basis.z
-	velocity += forward * thrust * THRUST_FORCE * delta
+	velocity += forward * thrust * thrust_force * delta
 	translate(velocity * delta)
-	velocity *= DAMPING
+	#velocity *= damping
 
+# --- Seat management ---
+func enter_pilot_seat(player: Character):
+	pilot = player
+	player.camera.current = false
+	player.reparent(pilot_seat)
+	player.global_transform = pilot_seat.global_transform
+	player.state = Character.PlayerState.PILOTING
+	player.active = false
+	pilot_cam.current = true
+	print("Player entered pilot seat: ", player.id)
 
-# --- Hull detection ---
-func _on_hull_body_entered(body: Node3D) -> void:
-	if thrust > 0:
+func _leave_pilot_seat():
+	if pilot == null:
 		return
-	if body is Player and not players_ship_proxies.has((body as Player).id) and (body as Player).active:
-		var duplicate := body.duplicate()
-		add_child(duplicate)
-		duplicate.visible = false
-		print("Added proxy: " + str(body.id))
-		players_ship_proxies[body.id] = duplicate
-		_possess_copy(body)
+	
+	var ex_pilot = pilot
+	ex_pilot.camera.current = false
+	ex_pilot.reparent(interior_root)
+	ex_pilot.camera.current = true
+	ex_pilot.global_transform.origin = pilot_seat.global_transform.origin
+	ex_pilot.state = Character.PlayerState.ON_FOOT
+	ex_pilot.active = true
+	
+	pilot_cam.current = false
+	pilot = null
+	print("Pilot left the seat")
+	
+func _on_hull_body_entered(body: Node3D) -> void:
+	if body == pilot:
+		return
+	if body is Character and body.state == Character.PlayerState.ON_FOOT:
+		# hráč vstoupil do interiéru
+		if original_parent == null:
+			original_parent = body.get_parent()
+		body.reparent(interior_root)
+		body.state = Character.PlayerState.ON_SHIP
+		print("Player entered ship hull: ", body.id)
+
 
 func _on_hull_body_exited(body: Node3D) -> void:
-	if thrust > 0:
+	if body == pilot:
 		return
-	if body is Player and players_ship_proxies.has((body as Player).id) and (body as Player).active:
-		_posses_original_player(body)
-
-		if get_children().has(body):
-			remove_child(body)
-			print("Removed proxy: " + str((body as Player).id))
-			players_ship_proxies.erase((body as Player).id)
-
-# --- PROXY MANAGMENT ---
-# Posses a ship based copy(proxy) of player
-func _possess_copy(player: Player) -> void:
-	# Set player as inactive
-	var p = player
-	print("Copy possesed! Added player: " + str(player.id))
-	players_controlling_proxies[p.id] = p
-	player.camera.current = false
-	player.visible = false
-	player.active = false
-	
-	# create player's duplicate as child of ship
-	var proxy = players_ship_proxies[p.id]
-	proxy.state = 2 # WANDERING
-	proxy.position = $InteriorRoot/PilotSeat.position
-	proxy.camera.current = true
-	proxy.visible = true
-	proxy.active = true
-	proxy.id = p.id
-	
-# Possesses original player's character
-func _posses_original_player(proxy: Player) -> void:
-	var player_char: Player = players_controlling_proxies[proxy.id]
-	proxy.camera.current = false
-	proxy.visible = false
-	proxy.active = false
-	
-	player_char.camera.current = true
-	player_char.visible = true
-	player_char.active = true
-	player_char.state = 0 # ON FOOT
-	player_char.global_position = proxy.global_position
-	print("Original player Possesed! Removed tracking of: " + str(proxy.id))
-	players_controlling_proxies.erase(proxy.id)
-	
-	
-func _leave_pilot_seat():
-	var ex_pilot = pilot
-	pilot = null
-	_possess_copy(ex_pilot)
-	
-func enter_pilot_seat(player: Player):
-	pilot = player
-	player.state = 1 # PILOTING
-	player.camera.current = false
-	player.active = false
-	
-	pilot_cam.current = true
+	if body is Character and body.state == Character.PlayerState.ON_SHIP:
+		# hráč vystoupil z interiéru zpět do světa
+		body.reparent(original_parent)
+		body.state = Character.PlayerState.ON_FOOT
+		print("Player left ship hull: ", body.id)
