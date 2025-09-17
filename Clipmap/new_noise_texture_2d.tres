@@ -1,6 +1,7 @@
 [gd_resource type="NoiseTexture2D" load_steps=2 format=3 uid="uid://l44ror36yeok"]
 
-[ext_resource type="FastNoiseLite" uid="uid://dey0w5jyoxd77" path="res://Clipmap/new_fast_noise_lite.tres" id="1_14hjb"]
+[ext_resource type="FastNoiseLite" uid="uid://dey0w5jyoxd77" path="res://Marching_Cubes/new_fast_noise_lite.tres" id="1_14hjb"]
+
 
 [resource]
 resource_local_to_scene = true

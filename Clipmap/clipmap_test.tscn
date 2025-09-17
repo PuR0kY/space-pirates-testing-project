@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://d3gxvikni6dd7"]
+[gd_scene load_steps=9 format=3 uid="uid://d3gxvikni6dd7"]
 
 [ext_resource type="PackedScene" uid="uid://2oxdgu03lnbk" path="res://addons/character-controller/example/main/player.tscn" id="1_ogvpo"]
 [ext_resource type="PackedScene" uid="uid://dv3f41b4g5hnv" path="res://Clipmap/clipmap.tscn" id="2_ogvpo"]
@@ -16,11 +16,18 @@ background_mode = 2
 sky = SubResource("Sky_5d3sc")
 tonemap_mode = 2
 
+[sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_tek5n"]
+dof_blur_far_enabled = true
+dof_blur_far_distance = 5000.0
+
+[sub_resource type="SphereMesh" id="SphereMesh_vescp"]
+radius = 10000.0
+height = 20000.0
+
 [node name="Node3D" type="Node3D"]
 
 [node name="Player" parent="." instance=ExtResource("1_ogvpo")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 491.077, 0)
-FlyModeSpeedModifier = 5
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(-0.866024, -0.433016, 0.250001, -0.432249, 0.89969, 0.060967, -0.251323, -0.0552638, -0.966325, 0, 0, 0)
@@ -28,11 +35,17 @@ shadow_enabled = true
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_733ev")
+camera_attributes = SubResource("CameraAttributesPractical_tek5n")
 
 [node name="Terrain" type="StaticBody3D" parent="."]
 
 [node name="Clipmap" parent="Terrain" node_paths=PackedStringArray("player_character") instance=ExtResource("2_ogvpo")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3.8784)
 player_character = NodePath("../../Player")
 
 [node name="Collisionmap" parent="Terrain" node_paths=PackedStringArray("player_character") instance=ExtResource("2_tek5n")]
 player_character = NodePath("../../Player")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Terrain"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -10000, 0)
+mesh = SubResource("SphereMesh_vescp")

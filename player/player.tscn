@@ -1,0 +1,86 @@
+[gd_scene load_steps=5 format=3 uid="uid://jyncanbkjjnq"]
+
+[ext_resource type="Script" uid="uid://c1ra6l46652u8" path="res://player/player.gd" id="1_oul6g"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_oul6g"]
+radius = 0.4
+height = 1.85
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_oul6g"]
+radius = 0.4
+height = 1.85
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_oul6g"]
+top_radius = 0.05
+bottom_radius = 0.05
+height = 0.7
+
+[node name="Player" type="CharacterBody3D"]
+script = ExtResource("1_oul6g")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.925, 0)
+mesh = SubResource("CapsuleMesh_oul6g")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.925, 0)
+shape = SubResource("CapsuleShape3D_oul6g")
+
+[node name="HeadPosition" type="Node3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+
+[node name="LandingAnimation" type="Node3D" parent="HeadPosition"]
+unique_name_in_owner = true
+
+[node name="Camera3D" type="Camera3D" parent="HeadPosition/LandingAnimation"]
+unique_name_in_owner = true
+
+[node name="OrientationIndicator" type="MeshInstance3D" parent="HeadPosition/LandingAnimation/Camera3D"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, -0.35)
+cast_shadow = 0
+mesh = SubResource("CylinderMesh_oul6g")
+
+[node name="CeilingDetector" type="RayCast3D" parent="."]
+target_position = Vector3(0, 2.1, 0)
+
+[node name="Crosshair" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ColorRect" type="ColorRect" parent="Crosshair"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -6.0
+offset_top = -6.0
+offset_right = 6.0
+offset_bottom = 6.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ColorRect2" type="ColorRect" parent="Crosshair"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -3.0
+offset_top = -3.0
+offset_right = 3.0
+offset_bottom = 3.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="FootstepSound" type="AudioStreamPlayer" parent="."]
+volume_db = -20.0
+max_polyphony = 10

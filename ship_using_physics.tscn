@@ -1,0 +1,23 @@
+[gd_scene load_steps=4 format=3 uid="uid://d3e0cdwqhd4oe"]
+
+[ext_resource type="Script" uid="uid://qixstbby6wxx" path="res://ship.gd" id="1_oftwi"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_oftwi"]
+size = Vector3(5, 1, 5)
+
+[sub_resource type="BoxMesh" id="BoxMesh_d5rxj"]
+size = Vector3(5, 1, 5)
+
+[node name="ship" type="RigidBody3D"]
+gravity_scale = 0.0
+script = ExtResource("1_oftwi")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_oftwi")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_d5rxj")
+skeleton = NodePath("../CollisionShape3D")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.942432, 0.334399, 0, -0.334399, 0.942432, 0, 2.76262, 4.36849)
